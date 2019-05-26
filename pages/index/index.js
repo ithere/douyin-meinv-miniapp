@@ -21,6 +21,7 @@ Page({
     })
   },
   onLoad: function(option) {
+    console.log('本小程序由mosou 原创,开源在 https://github.com/ithere/douyin-meinv-miniapp')
     const that = this
     that.getDouyinData()
     return
