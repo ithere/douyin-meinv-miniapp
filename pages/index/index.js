@@ -4,24 +4,18 @@ const app = getApp()
 
 Page({
   data: {
-    motto: 'Hello mosou',
     userInfo: {},
     hasUserInfo: false,
     canIUse: wx.canIUse('button.open-type.getUserInfo'),
     downloadRes: '',
     douyinData: '',
-    isLoading: false,
     getUrl: app.globalData.getUrl,
-    url: app.globalData.url
+    url: app.globalData.url,
+    page: 1
   },
-  //事件处理函数
-  bindViewTap: function() {
-    wx.navigateTo({
-      url: '../logs/logs'
-    })
-  },
-  onLoad: function(option) {
-    console.log('本小程序由mosou 原创,开源在 https://github.com/ithere/douyin-meinv-miniapp')
+
+  onLoad: function (option) {
+
     const that = this
     that.getDouyinData()
     return
@@ -52,7 +46,7 @@ Page({
       })
     }
   },
-  getUserInfo: function(e) {
+  getUserInfo: function (e) {
     console.log(e)
     app.globalData.userInfo = e.detail.userInfo
     this.setData({
@@ -60,7 +54,7 @@ Page({
       hasUserInfo: true
     })
   },
-  wxOnDownFile:function(url) {
+  wxOnDownFile: function (url) {
     const that = this
     const downloadTask = wx.downloadFile({
       url: url,
@@ -73,12 +67,12 @@ Page({
       }
     })
   },
-  downSuccess:function() {
+  downSuccess: function () {
     const that = this
     wx.hideLoading()
     wx.saveVideoToPhotosAlbum({
       filePath: that.data.downloadRes.tempFilePath,
-      success: function(res) {
+      success: function (res) {
         wx.showToast({
           title: '保存成功',
         })
@@ -86,7 +80,7 @@ Page({
     })
     return
   },
-  getRand:function() {
+  getRand: function () {
     const that = this
     const num = Math.ceil(Math.random() * 10)
     if (!num) {
@@ -94,22 +88,35 @@ Page({
     }
     return num
   },
-  getDouyinData:function(url = '') {
+  getDouyinData: function (url = '') {
+    wx.showLoading({
+      title: '正在加载，请稍后...',
+    });
+    wx.showNavigationBarLoading();
     const that = this
-    var num = that.getRand() - 0
+    // var num = that.getRand() - 0
+    // console.log("num:" + num);
     url = that.data.url
     wx.request({
-      url: url + '/open/douyin/likeData/'+(201900000000000 + num),
-      success: function(data) {
-        console.log(data)
+      url: url + '/open/douyin/likeData/' + (201900000000000 + this.data.page),
+      success: function (data) {
+        wx.hideLoading();
+        wx.hideNavigationBarLoading();
+        if (that.data.page == 1) {
+          wx.stopPullDownRefresh();
+        }
         const retData = data.data
         if (retData.aweme_list.length) {
-          let douyinData = retData.aweme_list
+          let douyinData = [];
+          if (that.data.page == 1) {
+            douyinData = retData.aweme_list;
+          } else {
+            douyinData = that.data.douyinData.concat(retData.aweme_list);
+          }
           that.setData({
-            douyinData,
-            isLoading: false
+            douyinData: douyinData,
           })
-          wx.hideLoading()
+
         } else {
           setTimeout(() => {
             that.getDouyinData(url)
@@ -117,12 +124,13 @@ Page({
           return
         }
       },
-      fail: function(err) {
-        wx.hideLoading()
+      fail: function (err) {
+        wx.hideLoading();
+        wx.hideNavigationBarLoading();
       }
     })
   },
-  douyinApi:function(e = '') {
+  itemClick: function (e = '') {
     const that = this
     var shortUrl = e.currentTarget.dataset.url
     if (!shortUrl) {
@@ -130,15 +138,43 @@ Page({
     }
     wx.request({
       url: that.data.getUrl,
-      method:'POST',
-      header:{
-        'Content-Type':'application/x-www-form-urlencoded'
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      data:{
+      data: {
         url: encodeURIComponent(shortUrl)
       },
-      success:function(data){
-        if(data.data){
+      success: function (data) {
+        if (data.data) {
+          wx.showLoading({
+            title: '正在下载',
+            mask: true
+          })
+          wx.navigateTo({
+            url: '/pages/video/video?url=' + data.data,
+          })
+        }
+      }
+    })
+  },
+  douyinApi: function (e = '') {
+    const that = this
+    var shortUrl = e.currentTarget.dataset.url
+    if (!shortUrl) {
+      return
+    }
+    wx.request({
+      url: that.data.getUrl,
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      data: {
+        url: encodeURIComponent(shortUrl)
+      },
+      success: function (data) {
+        if (data.data) {
           wx.showLoading({
             title: '正在下载',
             mask: true
@@ -152,7 +188,7 @@ Page({
   /**
    * 生命周期函数--监听页面隐藏
    */
-  onHide: function() {
+  onHide: function () {
     wx.hideLoading()
     this.setData({
       isClose: true
@@ -162,17 +198,26 @@ Page({
   /**
    * 生命周期函数--监听页面卸载
    */
-  onUnload: function() {
+  onUnload: function () {
     wx.hideLoading()
     this.setData({
       isClose: true
     })
   },
-  onPullDownRefresh: function(){
-    wx.showLoading({
-      title: '正在加载',
-      mask: true
-    })
-    this.getDouyinData()
+  onPullDownRefresh: function () {
+    this.data.page = 1;
+    this.getDouyinData();
+  },
+  onReachBottom: function () {
+    if (this.data.page < 10) {
+      this.data.page++;
+      this.getDouyinData();
+    } else {
+      wx.showToast({
+        title: '没有更多数据了',
+        icon: "none"
+      })
+    }
+
   }
 })

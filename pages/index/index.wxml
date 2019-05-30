@@ -13,7 +13,7 @@
 </view> -->
 <view wx:if="{{douyinData}}" class='main'>
   <view wx:for="{{douyinData}}" wx:key="douyinData" class='conetnt'>
-    <image class='leftVideo' src="{{item.video.cover.url_list[0]}}"></image>
+    <image class='leftVideo' src="{{item.video.cover.url_list[0]}}"  bindtap='itemClick' data-url='{{item.video.play_addr.url_list[0]}}'></image>
     <view>
       <button bindtap='douyinApi' size='mini' type='primary' data-url='{{item.video.play_addr.url_list[0]}}'>[{{index+1}}].下载</button>
     </view>
