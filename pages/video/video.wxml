@@ -1,0 +1,3 @@
+<video id='myVideo' class="video" src='{{url}}' loop='{{true}}' autoplay="{{true}}" bindplay="onplay">
+
+</video>
