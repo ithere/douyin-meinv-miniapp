@@ -11,7 +11,8 @@ Page({
     douyinData: '',
     getUrl: app.globalData.getUrl,
     url: app.globalData.url,
-    page: 1
+    page: 1,
+    retData: []
   },
 
   onLoad: function (option) {
@@ -115,9 +116,12 @@ Page({
           }
           that.setData({
             douyinData: douyinData,
+            retData: retData.aweme_list
           })
-
         } else {
+          that.setData({
+            retData: []
+          })
           setTimeout(() => {
             that.getDouyinData(url)
           }, 300)
@@ -209,7 +213,7 @@ Page({
     this.getDouyinData();
   },
   onReachBottom: function () {
-    if (this.data.page < 10) {
+    if (this.data.retData.length) {
       this.data.page++;
       this.getDouyinData();
     } else {
